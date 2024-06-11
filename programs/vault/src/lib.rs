@@ -142,11 +142,11 @@ impl<'info> Withdraw<'info> {
     }
 }
 
-// 3. Close Context - Empty the Vault to the user and close state account(because no more lamports left )
+// 4 . Close Context - Empty the Vault to the user (transfer all lamports from vault to user) and close state account(because no more lamports left )
 #[derive(Accounts)]
 pub struct Close<'info> {
     #[account(mut)]
-    pub user: Signer<'info>, //user is needed to derive PDAs
+    pub user: Signer<'info>, // mut because the lamports of user will be changed
     #[account(
         mut, // mutable because need to change the amount of lamports
         seeds = [b"state",vault_state.key().as_ref()],
@@ -194,7 +194,8 @@ impl<'info> Close<'info> {
 }
 
 // PDA Accounts
-// Store bumps
+// This account is used to store the bumps. for both the Vault system acc anf
+// the Vault SystemAccount and the VaultState acc, so they don't have to be derived everytime
 #[account]
 pub struct VaultState {
     pub vault_bump: u8, //save Vault   pda's bump (referenced in Initialize)
