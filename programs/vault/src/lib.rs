@@ -128,9 +128,10 @@ impl<'info> Withdraw<'info> {
         // Seeds used to derive Vault PDA. The seeds sign on behalf of the vault PDA
         let seeds = &[
             b"vault",
-            self.vault_state.to_account_info().key().as_ref(),
+            self.vault_state.to_account_info().key.as_ref(),
             &[self.vault_state.vault_bump],
         ];
+
         let signer_seeds = &[&seeds[..]];
 
         // 3. Create CPI Context (similar to usual context, but for system program)
@@ -178,9 +179,10 @@ impl<'info> Close<'info> {
         // Seeds used to derive Vault PDA. The seeds sign on behalf of the vault PDA
         let seeds = &[
             b"vault",
-            self.vault_state.to_account_info().key().as_ref(),
+            self.vault_state.to_account_info().key.as_ref(),
             &[self.vault_state.vault_bump],
         ];
+
         let signer_seeds = &[&seeds[..]];
 
         // 3. Create CPI Context (similar to usual context, but for system program)
