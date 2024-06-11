@@ -22,7 +22,31 @@ describe("vault", () => {
 
   it("Deposit", async () => {
     const depositAmount = 0.1 * anchor.web3.LAMPORTS_PER_SOL; //amount to deposit
-    const tx = await program.methods.deposit(new anchor.BN(depositAmount))
+    const tx = await program.methods
+      .deposit(new anchor.BN(depositAmount))
+      .accounts({
+        user: provider.wallet.publicKey   //signer
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+    // console.log("Vaut Balance is", program.account.vault )
+
+  });
+
+  it("Withdraw", async () => {
+    const withdrawAmount = 0.05 * anchor.web3.LAMPORTS_PER_SOL; //amount to deposit
+    const tx = await program.methods
+      .withdraw(new anchor.BN(withdrawAmount))
+      .accounts({
+        user: provider.wallet.publicKey   //signer
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("Close", async () => {
+    const tx = await program.methods
+      .close()
       .accounts({
         user: provider.wallet.publicKey   //signer
       })

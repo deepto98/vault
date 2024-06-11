@@ -41,7 +41,7 @@ pub struct Initialize<'info> {
     pub vault_state: Account<'info, VaultState>, //vault state account to store bumps
 
     #[account(seeds = [b"vault", vault_state.key().as_ref()], bump)]
-    pub vault: SystemAccount<'info>, //actual vault account
+    pub vault: SystemAccount<'info>, //actual vault account (pda)
     pub system_program: Program<'info, System>, // system program needed to initialize accounts
 }
 
@@ -60,7 +60,7 @@ pub struct Deposit<'info> {
     pub user: Signer<'info>, //user is needed to derive PDAs
     #[account(
         mut, // mutable because need to change the amount of lamports
-        seeds = [b"state",vault_state.key().as_ref()],
+        seeds = [b"vault",vault_state.key().as_ref()],
         bump = vault_state.vault_bump,
     )]
     pub vault: SystemAccount<'info>, //actual vault account
@@ -98,7 +98,7 @@ pub struct Withdraw<'info> {
     pub user: Signer<'info>, //user is needed to derive PDAs
     #[account(
         mut, // mutable because need to change the amount of lamports
-        seeds = [b"state",vault_state.key().as_ref()],
+        seeds = [b"vault",vault_state.key().as_ref()],
         bump = vault_state.vault_bump,
     )]
     pub vault: SystemAccount<'info>, //actual vault account
@@ -149,7 +149,7 @@ pub struct Close<'info> {
     pub user: Signer<'info>, // mut because the lamports of user will be changed
     #[account(
         mut, // mutable because need to change the amount of lamports
-        seeds = [b"state",vault_state.key().as_ref()],
+        seeds = [b"vault",vault_state.key().as_ref()],
         bump = vault_state.vault_bump,
     )]
     pub vault: SystemAccount<'info>, //actual vault account
