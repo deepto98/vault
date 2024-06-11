@@ -20,6 +20,10 @@ pub mod vault {
         ctx.accounts.withdraw(amount)?;
         Ok(())
     }
+    pub fn close(ctx: Context<Close>) -> Result<()> {
+        ctx.accounts.close()?;
+        Ok(())
+    }
 }
 
 // 1. Initialize Context
@@ -109,7 +113,7 @@ pub struct Withdraw<'info> {
 // For vault to user - Withdraw, the vault is a PDA, so the program has to sign on behalf of the PDA
 // FOr that we need seeds
 impl<'info> Withdraw<'info> {
-    // Function to deposit funds to the vault using a CPI. System program transfers from vault to user
+    // Function to withdraw funds from the vault using a CPI. System program transfers from vault to user
     pub fn withdraw(&mut self, amount: u64) -> Result<()> {
         //amount will be passed from client
 
@@ -121,7 +125,7 @@ impl<'info> Withdraw<'info> {
             to: self.user.to_account_info(),
         };
 
-        // Seeds used to derive Vault PDA. The seeds sign on behalf of the vault PDA 
+        // Seeds used to derive Vault PDA. The seeds sign on behalf of the vault PDA
         let seeds = &[
             b"vault",
             self.vault_state.to_account_info().key().as_ref(),
@@ -133,6 +137,56 @@ impl<'info> Withdraw<'info> {
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
         // 4.Transfer
         transfer(cpi_ctx, amount)?;
+        Ok(())
+    }
+}
+
+// 3. Close Context - Empty the Vault to the user and close state account(because no more lamports left )
+#[derive(Accounts)]
+pub struct Close<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>, //user is needed to derive PDAs
+    #[account(
+        mut, // mutable because need to change the amount of lamports
+        seeds = [b"state",vault_state.key().as_ref()],
+        bump = vault_state.vault_bump,
+    )]
+    pub vault: SystemAccount<'info>, //actual vault account
+
+    #[account(
+        mut, // mut because we'll close the vault_state PDA  
+        seeds = [b"state", user.key().as_ref()],
+        bump = vault_state.state_bump,
+        close = user //while closing, rent is transferred from vault_state to user
+        )]
+    pub vault_state: Account<'info, VaultState>, //vault state account to store bumps
+
+    pub system_program: Program<'info, System>, // system program needed send sol
+}
+
+impl<'info> Close<'info> {
+    // Function to close
+    pub fn close(&mut self) -> Result<()> {
+        // 1.Define CPI program - system program
+        let cpi_program = self.system_program.to_account_info(); //get system program
+        // 2.Create CPI accounts to and from
+        let cpi_accounts = Transfer {
+            from: self.vault.to_account_info(),
+            to: self.user.to_account_info(),
+        };
+
+        // Seeds used to derive Vault PDA. The seeds sign on behalf of the vault PDA
+        let seeds = &[
+            b"vault",
+            self.vault_state.to_account_info().key().as_ref(),
+            &[self.vault_state.vault_bump],
+        ];
+        let signer_seeds = &[&seeds[..]];
+
+        // 3. Create CPI Context (similar to usual context, but for system program)
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+        // 4.Transfer
+        transfer(cpi_ctx, self.vault.lamports())?;
         Ok(())
     }
 }
