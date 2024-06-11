@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, system_program::Transfer};
 
 declare_id!("8hX6Q2KWjpCNnvzih6mwkXAhVrRdQSsQH7eutbQ7j5Xo");
 
@@ -12,6 +12,7 @@ pub mod vault {
     }
 }
 
+// 1. Initialize Context
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(mut)]
@@ -38,6 +39,45 @@ impl<'info> Initialize<'info> {
         //InitializeBumps stores bumps for every acc in context - vault and vault_state
         self.vault_state.vault_bump = bumps.vault;
         self.vault_state.state_bump = bumps.vault_state;
+        Ok(())
+    }
+}
+// 2. Deposit Context
+#[derive(Accounts)]
+pub struct Deposit<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>, //user is needed to derive PDAs
+    #[account(
+        mut, // mutable because need to change the amount of lamports
+        seeds = [b"state",vault_state.key().as_ref()],
+        bump = vault_state.vault_bump,
+    )]
+    pub vault: SystemAccount<'info>, //actual vault account
+
+    #[account( 
+        seeds=[b"state",user.key().as_ref()],
+        bump = vault_state.state_bump,  
+    )]
+    pub vault_state: Account<'info, VaultState>, //vault state account to store bumps
+
+    pub system_program: Program<'info, System>, // system program needed send sol
+}
+
+impl<'info> Deposit<'info> {
+    // Function to deposit funds to the vault using a CPI
+    pub fn deposit(&mut self, amount: u64) -> Result<()> {//amount will be passed from client
+        
+        // 1.Create CPI Context 
+        let cpi_program = self.system_program.to_account_info(); //get system program
+        // 2.Create CPI accounts to and from
+        let cpi_accounts=Transfer{
+            from:self.user.to_account_info(),
+            to:self.vault.to_account_info(),
+        };
+        // 3. Create CPI Context (similar to usual context, but for system program)
+        let cpi_ctx=CpiContext::new(cpi_program, cpi_accounts);
+        // 4.Transfer
+        transfer(cpi_ctx, amount); 
         Ok(())
     }
 }
