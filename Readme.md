@@ -11,5 +11,5 @@ Extra (Challenge -> Hint: Explore “Clock::get()?.slot”)
 
 Add a locktime to withdraw so that user can only claim after it has expired.
 
-Run anchor test to build, deploy to localnet and run tests located in the test folder.
-
+Tests: 
+![](assets/2024-06-11-19-24-50.png)
